@@ -1,0 +1,7 @@
+game_pk,away_abbr,home_abbr,away_starter,away_starter_hand,home_starter,home_starter_hand,venue_name,game_time_utc,rs_away,ra_away,rs_home,ra_home,exp_total,game_wpct_away,game_wpct_home,ml_away,ml_home,book_ml_away,book_ml_home,edge_away,edge_home,war_wpct_away,pythag_away,xwins_away,xwins_home
+824441,LAA,CLE,Brent Suter,L,Joey Cantillo,L,Progressive Field,2026-05-11T22:10:00Z,4.16,4.52,4.41,4.92,8.6,0.3487,0.6513,187,-187,NA,NA,NA,NA,0.3487,0.4623,57.2,77.1
+824844,NYY,BAL,Ryan Weathers,L,Brandon Young,R,Oriole Park at Camden Yards,2026-05-11T22:35:00Z,4.75,5.07,4.49,4.18,10.2,0.559,0.441,-127,127,NA,NA,NA,NA,0.559,0.4709,90,75.9
+822818,TB,TOR,Drew Rasmussen,R,Kevin Gausman,R,Rogers Centre,2026-05-11T23:07:00Z,4.32,4.35,4.37,4.32,8.5,0.461,0.539,117,-117,NA,NA,NA,NA,0.461,0.4966,83.2,84.4
+822901,AZ,TEX,Michael Soroka,R,Jakob Junis,R,Globe Life Field,2026-05-12T00:05:00Z,4.61,4.58,4.38,4.79,8,0.567,0.433,-131,131,NA,NA,NA,NA,0.567,0.5026,83,68
+824199,SEA,HOU,George Kirby,R,Peter Lambert,R,Daikin Park,2026-05-12T00:10:00Z,4.62,5.1,4.39,4.11,9.4,0.6087,0.3913,-156,156,NA,NA,NA,NA,0.6087,0.4549,89.1,67.3
+823953,SF,LAD,Trevor McDonald,R,Roki Sasaki,R,UNIQLO Field at Dodger Stadium,2026-05-12T02:10:00Z,4.24,5.14,5.11,4.7,10.7,0.3456,0.6544,189,-189,NA,NA,NA,NA,0.3456,0.4128,73.4,93.3
