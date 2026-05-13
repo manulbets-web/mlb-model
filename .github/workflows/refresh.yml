@@ -1,0 +1,48 @@
+name: MLB Daily Data Refresh
+
+on:
+  schedule:
+    - cron: "0 13 * * *"
+    - cron: "0 16 * * *"
+    - cron: "0 21 * * *"
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.3.3"
+          use-public-rspm: true
+
+      - name: Install system deps
+        run: sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+
+      - name: Cache R packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: r-pkgs-${{ hashFiles("export_json.R") }}
+
+      - name: Install R packages
+        run: |
+          Rscript -e "pkgs <- c("googlesheets4","httr","jsonlite","dplyr","purrr","tibble","stringr"); install.packages(pkgs[!pkgs %in% rownames(installed.packages())], repos="https://cloud.r-project.org")"
+
+      - name: Run export
+        env:
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          GS_SERVICE_ACCOUNT_JSON: ${{ secrets.GS_SERVICE_ACCOUNT_JSON }}
+        run: Rscript export_json.R
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data.json
+          git diff --staged --quiet || git commit -m "chore: refresh data $(date -u +"%Y-%m-%d %H:%M UTC")"
+          git push
