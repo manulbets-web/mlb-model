@@ -237,8 +237,7 @@ main{flex:1}
         <div class="hdr-logo-name">Model</div>
       </div>
       <div class="hdr-tabs">
-        <button class="tab on" onclick="setView('bets',this)">Bet list</button>
-        <button class="tab"    onclick="setView('games',this)">Games</button>
+        <button class="tab on" onclick="setView('games',this)">Games</button>
       </div>
       <div class="hdr-right">
         <div class="live"></div>
@@ -249,37 +248,13 @@ main{flex:1}
     <div class="stats-bar">
       <div class="stat"><span class="stat-lbl">Date</span><span class="stat-val" id="t-date">—</span></div>
       <div class="stat"><span class="stat-lbl">Games</span><span class="stat-val" id="t-games">—</span></div>
-      <div class="stat"><span class="stat-lbl">Strong edges</span><span class="stat-val" id="t-strong">—</span><span class="stat-sub">≥5%</span></div>
-      <div class="stat"><span class="stat-lbl">Moderate</span><span class="stat-val" id="t-mod">—</span><span class="stat-sub">≥2%</span></div>
+
       <div class="stat"><span class="stat-lbl">Updated</span><span class="stat-val" id="t-upd" style="font-size:10px">—</span></div>
     </div>
   </header>
 
   <main>
-    <div class="view on" id="view-bets">
-      <div class="fbar">
-        <span class="flbl">Edge</span>
-        <button class="fbtn on" data-ef="all"      onclick="setEF(this)">All</button>
-        <button class="fbtn"    data-ef="strong"   onclick="setEF(this)">Strong</button>
-        <button class="fbtn"    data-ef="moderate" onclick="setEF(this)">Mod+</button>
-      </div>
-      <div class="tbl-wrap">
-        <div class="tbl-head">
-          <div class="th"></div>
-          <div class="th">Game</div>
-          <div class="th">Type</div>
-          <div class="th">Side</div>
-          <div class="th">Book</div>
-          <div class="th">Fair</div>
-          <div class="th">Edge</div>
-          <div class="th">EV</div>
-          <div class="th" style="text-align:right">Time</div>
-        </div>
-        <div id="bet-list"></div>
-      </div>
-    </div>
-
-    <div class="view" id="view-games">
+    <div class="view on" id="view-games">
       <div class="games-wrap" id="games-grid"></div>
     </div>
   </main>
@@ -288,7 +263,7 @@ main{flex:1}
 <script>
 const PW_HASH='121c2ecbc9bc307df06c85c863b9ef8fc5aa512fcbeec25f667d2a2d9e33a5dd';
 const SK='mlb_auth_v2';
-let DATA=null, ef='all';
+let DATA=null;
 let pickerCallback=null, pickerTeam=null, pickerSlot=null;
 const overrides={};
 
@@ -314,9 +289,9 @@ async function load(){
     const r=await fetch('data.json?t='+Date.now());
     if(!r.ok) throw new Error('HTTP '+r.status);
     DATA=await r.json();
-    updateTicker();renderBets();renderGames();
+    updateTicker();renderGames();
   }catch(e){
-    document.getElementById('bet-list').innerHTML=`<div class="empty"><div class="empty-icon">!</div><p>${e.message}</p></div>`;
+    document.getElementById('games-grid').innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">!</div><p>${e.message}</p></div>`;
   }finally{document.getElementById('loading').classList.remove('on');}
 }
 
@@ -326,8 +301,6 @@ function updateTicker(){
   const d=m.date?m.date.split('-'):null;
   document.getElementById('t-date').textContent   =d?mo[+d[1]-1]+' '+d[2]:'—';
   document.getElementById('t-games').textContent  =m.n_games??'—';
-  document.getElementById('t-strong').textContent =m.n_strong??'—';
-  document.getElementById('t-mod').textContent    =m.n_moderate??'—';
   const upd=m.updated_at?new Date(m.updated_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/New_York'})+' ET':'—';
   document.getElementById('t-upd').textContent=upd;
   document.getElementById('upd').textContent=upd;
@@ -419,25 +392,25 @@ function renderGames(){
   el.innerHTML=DATA.games.map((g,gi)=>{
     const ba=g.bets?.away,bh=g.bets?.home;
     const best=[ba,bh].filter(Boolean).sort((a,b)=>(b.edge||0)-(a.edge||0))[0];
-    const bestLabel=best&&['strong','moderate'].includes(best.tier)?`▸ ${best.side} ${fe(best.edge)}`:'';
+    const bestLabel='';
     const hasLineup=(g.away_lineup?.length||0)+(g.home_lineup?.length||0)>0;
     const nMissing=(g.n_missing?.away||0)+(g.n_missing?.home||0);
 
     const oddsBoxes=[
-      {lbl:g.away_abbr+' ML', val:fl(g.odds?.book_a), tier:ba?.tier||'none', edge:fe(ba?.edge)},
-      {lbl:g.home_abbr+' ML', val:fl(g.odds?.book_h), tier:bh?.tier||'none', edge:fe(bh?.edge)},
-      {lbl:'Over',  val:fl(g.odds?.over_ml),  tier:'none', edge:'—'},
-      {lbl:'Under', val:fl(g.odds?.under_ml), tier:'none', edge:'—'},
+      {lbl:g.away_abbr+' Win%', val:fp(g.model?.away_win), sub:fl(g.model?.fair_ml_a)},
+      {lbl:g.home_abbr+' Win%', val:fp(g.model?.home_win), sub:fl(g.model?.fair_ml_h)},
+      {lbl:'xWins Away',  val:g.model?.away_xw?.toFixed(1)||'—', sub:''},
+      {lbl:'xWins Home',  val:g.model?.home_xw?.toFixed(1)||'—', sub:''},
     ].map(b=>`<div class="gc-ob">
       <div class="gc-ol">${b.lbl}</div>
       <div class="gc-ov">${b.val}</div>
-      <div class="gc-oe ${b.tier}">${b.edge}</div>
+      <div class="gc-oe none">${b.sub}</div>
     </div>`).join('');
 
     const modelStats=`<div class="gc-model-row">
-      <div class="gc-ms"><div class="gc-ms-lbl">Away win%</div><div class="gc-ms-val">${fp(g.model?.away_win_pct)} · ${fl(g.model?.fair_ml_a)}</div></div>
-      <div class="gc-ms"><div class="gc-ms-lbl">Home win%</div><div class="gc-ms-val">${fp(g.model?.home_win_pct)} · ${fl(g.model?.fair_ml_h)}</div></div>
-      <div class="gc-ms"><div class="gc-ms-lbl">Total</div><div class="gc-ms-val">${g.model?.total?g.model.total.toFixed(1):'—'}</div></div>
+      <div class="gc-ms"><div class="gc-ms-lbl">Model total</div><div class="gc-ms-val">${g.model?.total?g.model.total.toFixed(1):'—'}</div></div>
+      <div class="gc-ms"><div class="gc-ms-lbl">${g.away_abbr} ERA</div><div class="gc-ms-val">${g.away_pitcher?.era?.toFixed(2)||'—'} / ${g.away_pitcher?.tot_era?.toFixed(2)||'—'}</div></div>
+      <div class="gc-ms"><div class="gc-ms-lbl">${g.home_abbr} ERA</div><div class="gc-ms-val">${g.home_pitcher?.era?.toFixed(2)||'—'} / ${g.home_pitcher?.tot_era?.toFixed(2)||'—'}</div></div>
     </div>`;
 
     return`<div class="gc" id="gc-${gi}">
@@ -448,7 +421,7 @@ function renderGames(){
         </div>
         <div class="gc-tr">
           <div class="gc-time">${g.game_time||''}</div>
-          ${bestLabel?`<div class="gc-best">${bestLabel}</div>`:''}
+
           ${nMissing>0?`<div style="font-size:9px;color:var(--amber);font-family:var(--mono);margin-top:2px">⚠ ${nMissing} missing</div>`:''}
         </div>
       </div>

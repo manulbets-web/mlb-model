@@ -140,7 +140,7 @@ games_out <- purrr::map(game_tabs, function(tab) {
     error=function(e){message("  [WARN] ",tab,": ",e$message);NULL})
   if (is.null(df)||nrow(df)<5) return(NULL)
 
-  col_b <- as.character(df[[2]]); col_c <- as.character(df[[3]])
+  col_a <- as.character(df[[1]]); col_b <- as.character(df[[2]]); col_c <- as.character(df[[3]])
   mid       <- nchar(tab)%/%2+nchar(tab)%%2
   away_abbr <- substr(tab,1,mid); home_abbr <- substr(tab,mid+1,nchar(tab))
 
@@ -201,15 +201,17 @@ games_out <- purrr::map(game_tabs, function(tab) {
   under_ml <- if(!is.na(tr)) safe_num(cell(tr+1,13)) else NA_real_
 
   # Pitcher ERA from detail block
-  away_lbl <- which(col_b=="Away"); home_lbl <- which(col_b=="Home")
-  det_away <- if(length(away_lbl)>=2) away_lbl[2] else NA_integer_
-  det_home <- if(length(home_lbl)>=2) home_lbl[2] else NA_integer_
-  away_era <- if(!is.na(det_away)) safe_num(cell(det_away+1L,6)) else NA_real_
-  home_era <- if(!is.na(det_home)) safe_num(cell(det_home+1L,6)) else NA_real_
-  away_bull_era <- if(!is.na(det_away)) safe_num(cell(det_away+1L,7)) else NA_real_
-  home_bull_era <- if(!is.na(det_home)) safe_num(cell(det_home+1L,7)) else NA_real_
-  away_tot_era  <- if(!is.na(det_away)) safe_num(cell(det_away+1L,8)) else NA_real_
-  home_tot_era  <- if(!is.na(det_home)) safe_num(cell(det_home+1L,8)) else NA_real_
+  # Detail block identified by "Order" in col A (3rd and 4th occurrences)
+  # Pitcher row is the Order row itself (col 3=name, col 8=ERA, col 9=Bullpen, col 10=Total ERA)
+  order_rows <- which(col_a == "Order")
+  det_away_order <- if(length(order_rows)>=3) order_rows[3] else NA_integer_
+  det_home_order <- if(length(order_rows)>=4) order_rows[4] else NA_integer_
+  away_era      <- if(!is.na(det_away_order)) safe_num(cell(det_away_order, 8))  else NA_real_
+  away_bull_era <- if(!is.na(det_away_order)) safe_num(cell(det_away_order, 9))  else NA_real_
+  away_tot_era  <- if(!is.na(det_away_order)) safe_num(cell(det_away_order, 10)) else NA_real_
+  home_era      <- if(!is.na(det_home_order)) safe_num(cell(det_home_order, 8))  else NA_real_
+  home_bull_era <- if(!is.na(det_home_order)) safe_num(cell(det_home_order, 9))  else NA_real_
+  home_tot_era  <- if(!is.na(det_home_order)) safe_num(cell(det_home_order, 10)) else NA_real_
 
   list(
     tab         = tab,
