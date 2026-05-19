@@ -2,907 +2,394 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MANU BETS — MLB MODEL</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MANUBETS — MLB</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* ── Reset & base ─────────────────────────────────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f8f8f6;--bg3:#f0f0ec;
+  --border:#e4e4de;--border2:#c8c8c0;
+  --ink:#0a0a08;--ink2:#3a3a34;--ink3:#7a7a70;--ink4:#b0b0a8;
+  --green:#0a7c3e;--green-bg:#ecfdf3;
+  --amber:#92600a;--amber-bg:#fffbeb;
+  --blue:#1a56db;--blue-bg:#eff4ff;
+  --red:#be1b1b;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5}
 
-  :root {
-    --bg:       #0c0c08;
-    --bg2:      #111109;
-    --bg3:      #161610;
-    --border:   #2a2a1a;
-    --border2:  #3a3a22;
-    --amber:    #e8b840;
-    --amber2:   #c99820;
-    --amber-dim:#7a5e10;
-    --green:    #4ade80;
-    --yellow:   #fbbf24;
-    --blue:     #60a5fa;
-    --red:      #f87171;
-    --fg:       #d4cc9a;
-    --fg2:      #8a8460;
-    --fg3:      #4a4630;
-    --mono:     'Martian Mono', monospace;
-    --serif:    'DM Serif Display', serif;
-  }
+/* Lock */
+#lock{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:1000}
+.lock-title{font-family:var(--mono);font-size:13px;font-weight:500;letter-spacing:4px;text-transform:uppercase;text-align:center}
+.lock-title small{display:block;font-size:10px;letter-spacing:3px;color:var(--ink3);margin-top:4px;font-weight:400}
+.lock-box{width:260px;display:flex;flex-direction:column;gap:8px}
+.lock-input{width:100%;border:1px solid var(--border2);background:#fff;font-family:var(--mono);font-size:13px;padding:9px 12px;outline:none;color:var(--ink);border-radius:2px;letter-spacing:2px;text-align:center}
+.lock-input:focus{border-color:var(--ink)}
+.lock-btn{background:var(--ink);color:#fff;border:none;font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;padding:10px;cursor:pointer;border-radius:2px;width:100%}
+.lock-err{height:14px;font-size:10px;color:var(--red);text-align:center;letter-spacing:1px}
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--fg);
-    font-family: var(--mono);
-    font-size: 13px;
-    line-height: 1.5;
-    overflow-x: hidden;
-  }
+/* Shell */
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.on{display:flex}
 
-  /* Scanline texture overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.03) 2px,
-      rgba(0,0,0,0.03) 4px
-    );
-    pointer-events: none;
-    z-index: 9999;
-  }
+/* Header */
+header{border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:100;flex-shrink:0}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:44px;border-bottom:1px solid var(--border)}
+.brand{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:3px;text-transform:uppercase}
+.tabs{display:flex}
+.tab{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:0 14px;height:44px;display:flex;align-items:center;border:none;background:transparent;cursor:pointer;color:var(--ink3);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--ink);border-bottom-color:var(--ink)}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.live{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.upd{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.refresh{font-family:var(--mono);font-size:10px;padding:5px 10px;background:#fff;border:1px solid var(--border2);color:var(--ink3);cursor:pointer;border-radius:2px}
+.refresh:hover{border-color:var(--ink);color:var(--ink)}
 
-  /* ── Lock screen ──────────────────────────────────────────────────────── */
-  #lock {
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    gap: 32px;
-  }
-  .lock-logo {
-    font-family: var(--serif);
-    font-size: 42px;
-    color: var(--amber);
-    letter-spacing: 2px;
-    text-align: center;
-    line-height: 1;
-  }
-  .lock-logo span {
-    display: block;
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 6px;
-    color: var(--fg3);
-    margin-top: 8px;
-    text-transform: uppercase;
-  }
-  .lock-form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
-    width: 280px;
-  }
-  .lock-input {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border2);
-    color: var(--amber);
-    font-family: var(--mono);
-    font-size: 14px;
-    letter-spacing: 3px;
-    padding: 12px 16px;
-    text-align: center;
-    outline: none;
-    border-radius: 4px;
-    transition: border-color 0.2s;
-  }
-  .lock-input:focus { border-color: var(--amber); }
-  .lock-input::placeholder { color: var(--fg3); letter-spacing: 1px; }
-  .lock-btn {
-    width: 100%;
-    background: var(--amber);
-    color: var(--bg);
-    border: none;
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    padding: 11px;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background 0.15s;
-  }
-  .lock-btn:hover { background: var(--amber2); }
-  .lock-error {
-    font-size: 11px;
-    color: var(--red);
-    letter-spacing: 1px;
-    height: 16px;
-    text-align: center;
-  }
-  .lock-hint { font-size: 10px; color: var(--fg3); letter-spacing: 1px; }
+/* Ticker */
+.ticker{background:var(--bg2);border-bottom:1px solid var(--border);height:32px;display:flex;align-items:center;gap:0;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.ticker::-webkit-scrollbar{display:none}
+.tick{display:flex;gap:6px;align-items:center;padding:0 16px;border-right:1px solid var(--border);height:100%;white-space:nowrap;flex-shrink:0}
+.tick-l{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3)}
+.tick-v{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--ink)}
+.tick-s{font-family:var(--mono);font-size:9px;color:var(--ink4)}
 
-  /* ── App shell (hidden until unlocked) ───────────────────────────────── */
-  #app { display: none; flex-direction: column; min-height: 100vh; }
-  #app.visible { display: flex; }
+/* Main */
+main{flex:1}
+.view{display:none}
+.view.on{display:block}
 
-  /* ── Header ──────────────────────────────────────────────────────────── */
-  header {
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .h-logo {
-    font-family: var(--serif);
-    font-size: 20px;
-    color: var(--amber);
-    letter-spacing: 1px;
-  }
-  .h-logo em { font-style: italic; color: var(--amber2); }
-  .h-center { display: flex; gap: 2px; }
-  .tab-btn {
-    font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 6px 14px;
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--fg3);
-    cursor: pointer;
-    border-radius: 3px;
-    transition: all 0.15s;
-  }
-  .tab-btn:hover { color: var(--fg); border-color: var(--border2); }
-  .tab-btn.active { color: var(--amber); border-color: var(--amber-dim); background: rgba(232,184,64,0.07); }
-  .h-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 10px;
-    letter-spacing: 1px;
-    color: var(--fg3);
-  }
-  .h-right .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  .refresh-btn {
-    background: transparent;
-    border: 1px solid var(--border2);
-    color: var(--fg3);
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 1px;
-    padding: 5px 10px;
-    cursor: pointer;
-    border-radius: 3px;
-    transition: all 0.15s;
-  }
-  .refresh-btn:hover { color: var(--amber); border-color: var(--amber-dim); }
+/* Filter bar */
+.fbar{display:flex;align-items:center;gap:6px;padding:10px 20px;border-bottom:1px solid var(--border);background:#fff;flex-wrap:wrap}
+.flbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);margin-right:2px}
+.fbtn{font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:4px 10px;background:#fff;border:1px solid var(--border);color:var(--ink3);cursor:pointer;border-radius:2px}
+.fbtn:hover{border-color:var(--border2);color:var(--ink2)}
+.fbtn.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.fsep{width:1px;height:16px;background:var(--border);margin:0 4px}
 
-  /* ── Stats ticker bar ─────────────────────────────────────────────────── */
-  #ticker {
-    background: var(--bg3);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    gap: 32px;
-    flex-shrink: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  #ticker::-webkit-scrollbar { display: none; }
-  .tick-item { display: flex; gap: 8px; align-items: baseline; flex-shrink: 0; }
-  .tick-label { font-size: 9px; letter-spacing: 2px; color: var(--fg3); text-transform: uppercase; }
-  .tick-value { font-size: 14px; font-weight: 700; color: var(--amber); }
-  .tick-sub { font-size: 10px; color: var(--fg3); }
-  .tick-div { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+/* Bet table */
+.tbl-head{display:grid;grid-template-columns:16px 110px 36px 90px 60px 64px 64px 64px 1fr;gap:0;padding:6px 20px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:89px;z-index:50}
+.th{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);padding:0 4px}
+.sec-hd{display:flex;align-items:center;gap:8px;padding:7px 20px;background:var(--bg3);border-bottom:1px solid var(--border);border-top:1px solid var(--border)}
+.sec-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3)}
+.sec-badge{font-family:var(--mono);font-size:9px;font-weight:500;padding:1px 6px;border-radius:2px}
+.badge-strong{background:var(--green-bg);color:var(--green)}
+.badge-moderate{background:var(--amber-bg);color:var(--amber)}
+.badge-slight{background:var(--blue-bg);color:var(--blue)}
+.badge-none{background:var(--bg3);color:var(--ink3)}
 
-  /* ── Main layout ─────────────────────────────────────────────────────── */
-  main { flex: 1; padding: 24px; max-width: 1200px; width: 100%; margin: 0 auto; }
+.bet{display:grid;grid-template-columns:16px 110px 36px 90px 60px 64px 64px 64px 1fr;gap:0;padding:7px 20px;border-bottom:1px solid var(--border);align-items:center;cursor:default}
+.bet:hover{background:var(--bg2)}
+.bet.strong .bflag{background:var(--green)}
+.bet.moderate .bflag{background:#f59e0b}
+.bet.slight .bflag{background:#93c5fd}
+.bet.none .bflag{background:var(--border2)}
+.bflag{width:3px;height:26px;border-radius:1px;margin:0 auto}
+.bc{padding:0 4px;font-size:12px;color:var(--ink2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.bc-match{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--ink)}
+.bc-type{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:1px;padding:2px 5px;border-radius:2px;background:var(--blue-bg);color:var(--blue)}
+.bc-num{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--ink)}
+.bc-edge{font-family:var(--mono);font-size:12px;font-weight:500}
+.bc-edge.strong{color:var(--green)}
+.bc-edge.moderate{color:var(--amber)}
+.bc-edge.slight{color:var(--blue)}
+.bc-edge.none{color:var(--ink3)}
+.bc-ev{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.bc-ev.pos{color:var(--green)}
+.bc-time{font-family:var(--mono);font-size:10px;color:var(--ink4);text-align:right}
 
-  /* ── Views ───────────────────────────────────────────────────────────── */
-  .view { display: none; }
-  .view.active { display: block; }
+.empty{text-align:center;padding:60px 20px;color:var(--ink3)}
+.empty-big{font-family:var(--mono);font-size:28px;color:var(--border2)}
+.empty p{font-size:11px;letter-spacing:1px;margin-top:10px}
 
-  /* ── Filter row ──────────────────────────────────────────────────────── */
-  .filter-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  .filter-label { font-size: 9px; letter-spacing: 2px; color: var(--fg3); text-transform: uppercase; margin-right: 4px; }
-  .filter-btn {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 1px;
-    padding: 4px 12px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--fg3);
-    cursor: pointer;
-    border-radius: 3px;
-    transition: all 0.15s;
-  }
-  .filter-btn:hover { border-color: var(--border2); color: var(--fg); }
-  .filter-btn.on { border-color: var(--amber-dim); color: var(--amber); background: rgba(232,184,64,0.06); }
-  .filter-sep { width: 1px; height: 18px; background: var(--border); }
+/* Games grid */
+.games-wrap{padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
+.gc{border:1px solid var(--border);border-radius:4px;background:#fff;overflow:hidden}
+.gc-hd{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;background:var(--bg2);cursor:pointer;user-select:none}
+.gc-hd:hover{background:var(--bg3)}
+.gc-teams{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--ink)}
+.gc-at{color:var(--ink3);font-weight:400;margin:0 4px}
+.gc-meta{font-size:10px;color:var(--ink3);margin-top:3px}
+.gc-tr{text-align:right}
+.gc-time{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.gc-best{font-family:var(--mono);font-size:10px;color:var(--green);margin-top:3px}
 
-  /* ── Bet table ───────────────────────────────────────────────────────── */
-  .section-head {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--fg3);
-    text-transform: uppercase;
-    padding: 16px 0 8px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 4px;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  .section-head .badge {
-    font-size: 9px;
-    padding: 1px 6px;
-    border-radius: 2px;
-    font-weight: 700;
-  }
-  .badge-strong   { background: rgba(74,222,128,0.12); color: var(--green); }
-  .badge-moderate { background: rgba(251,191,36,0.12); color: var(--yellow); }
-  .badge-slight   { background: rgba(96,165,250,0.08); color: var(--blue); }
-  .badge-none     { background: rgba(255,255,255,0.04); color: var(--fg3); }
+.gc-odds{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-bottom:1px solid var(--border)}
+.gc-ob{padding:8px 10px;border-right:1px solid var(--border)}
+.gc-ob:last-child{border-right:none}
+.gc-ol{font-size:9px;font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:3px}
+.gc-ov{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--ink)}
+.gc-oe{font-size:10px;margin-top:2px;font-family:var(--mono)}
+.gc-oe.strong{color:var(--green)}
+.gc-oe.moderate{color:var(--amber)}
+.gc-oe.slight{color:var(--blue)}
+.gc-oe.none{color:var(--ink4)}
 
-  .bet-row {
-    display: grid;
-    grid-template-columns: 130px 44px 110px 70px 70px 80px 80px 1fr;
-    align-items: center;
-    gap: 0;
-    padding: 9px 12px;
-    border-bottom: 1px solid var(--border);
-    transition: background 0.1s;
-    cursor: default;
-  }
-  .bet-row:hover { background: var(--bg3); }
-  .bet-row.strong   { border-left: 2px solid var(--green); }
-  .bet-row.moderate { border-left: 2px solid var(--yellow); }
-  .bet-row.slight   { border-left: 2px solid var(--blue); }
-  .bet-row.none     { border-left: 2px solid var(--border); opacity: 0.6; }
+.gc-toggle{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-top:1px solid var(--border);cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--ink3);user-select:none}
+.gc-toggle:hover{background:var(--bg2);color:var(--ink)}
+.gc-lineups{display:none;padding:12px 14px;border-top:1px solid var(--border)}
+.gc-lineups.on{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gc-lhd{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.gc-pitcher{font-size:11px;color:var(--ink2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.gc-pitcher b{color:var(--ink);font-weight:500}
+.gc-brow{display:flex;gap:6px;padding:3px 0;font-size:11px;border-bottom:1px solid var(--bg3)}
+.gc-brow:last-child{border:none}
+.gc-bn{color:var(--ink3);font-family:var(--mono);width:14px;text-align:right;flex-shrink:0;font-size:10px}
+.gc-bname{color:var(--ink2);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.gc-bhand{color:var(--ink4);font-family:var(--mono);font-size:10px;width:12px;flex-shrink:0}
 
-  .bet-col { padding: 0 8px; }
-  .col-matchup { font-weight: 500; color: var(--fg); font-size: 12px; }
-  .col-type {
-    font-size: 9px; font-weight: 700; letter-spacing: 1px;
-    color: var(--blue); background: rgba(96,165,250,0.08);
-    padding: 2px 6px; border-radius: 2px; text-align: center;
-  }
-  .col-side { color: var(--fg2); font-size: 12px; }
-  .col-line { font-weight: 500; color: var(--fg); font-size: 13px; }
-  .col-model { color: var(--fg3); font-size: 11px; }
-  .col-edge { font-weight: 700; font-size: 13px; }
-  .col-edge.strong   { color: var(--green); }
-  .col-edge.moderate { color: var(--yellow); }
-  .col-edge.slight   { color: var(--blue); }
-  .col-edge.none     { color: var(--fg3); }
-  .col-ev { font-size: 11px; color: var(--fg3); }
-  .col-ev.pos { color: rgba(74,222,128,0.6); }
-  .col-time { font-size: 10px; color: var(--fg3); text-align: right; }
+/* Loading */
+#loading{display:none;position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+#loading.on{display:flex}
+.spin{width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--ink3)}
 
-  /* Table header */
-  .bet-row-header {
-    display: grid;
-    grid-template-columns: 130px 44px 110px 70px 70px 80px 80px 1fr;
-    gap: 0;
-    padding: 6px 12px;
-    margin-bottom: 2px;
-  }
-  .bet-row-header .bet-col {
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--fg3);
-    text-transform: uppercase;
-  }
-
-  /* Empty state */
-  .empty-state {
-    text-align: center;
-    padding: 64px 0;
-    color: var(--fg3);
-  }
-  .empty-state .big { font-family: var(--serif); font-size: 48px; color: var(--border2); }
-  .empty-state p { font-size: 11px; letter-spacing: 1px; margin-top: 12px; }
-
-  /* ── Games view ─────────────────────────────────────────────────────── */
-  .games-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 16px;
-  }
-
-  .game-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
-    transition: border-color 0.15s;
-  }
-  .game-card:hover { border-color: var(--border2); }
-
-  .gc-head {
-    padding: 14px 16px 12px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-  .gc-teams {
-    font-family: var(--serif);
-    font-size: 20px;
-    color: var(--amber);
-    letter-spacing: 1px;
-    line-height: 1;
-  }
-  .gc-meta { font-size: 10px; color: var(--fg3); margin-top: 5px; letter-spacing: 0.5px; }
-  .gc-time { font-size: 11px; color: var(--fg3); text-align: right; }
-  .gc-best-bet { font-size: 11px; color: var(--green); margin-top: 4px; text-align: right; }
-
-  .gc-odds {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    border-bottom: 1px solid var(--border);
-  }
-  .gc-odds-box {
-    padding: 10px 12px;
-    border-right: 1px solid var(--border);
-  }
-  .gc-odds-box:last-child { border-right: none; }
-  .gc-odds-label { font-size: 9px; letter-spacing: 1px; color: var(--fg3); text-transform: uppercase; margin-bottom: 4px; }
-  .gc-odds-val { font-size: 15px; font-weight: 700; color: var(--fg); }
-  .gc-odds-edge { font-size: 10px; margin-top: 2px; }
-  .gc-odds-edge.strong   { color: var(--green); }
-  .gc-odds-edge.moderate { color: var(--yellow); }
-  .gc-odds-edge.slight   { color: var(--blue); }
-  .gc-odds-edge.none     { color: var(--fg3); }
-
-  .gc-lineups {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 12px 16px;
-    gap: 16px;
-  }
-  .gc-lineup-col { }
-  .gc-lineup-head {
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--amber-dim);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--border);
-  }
-  .gc-pitcher {
-    font-size: 11px;
-    color: var(--fg2);
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--border);
-  }
-  .gc-pitcher strong { color: var(--fg); }
-  .gc-batter {
-    display: flex;
-    gap: 6px;
-    padding: 3px 0;
-    font-size: 11px;
-    border-bottom: 1px solid rgba(42,42,26,0.5);
-  }
-  .gc-batter:last-child { border-bottom: none; }
-  .gc-batter-num { color: var(--fg3); width: 14px; text-align: right; flex-shrink: 0; }
-  .gc-batter-name { color: var(--fg2); flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .gc-batter-hand { color: var(--fg3); width: 12px; flex-shrink: 0; }
-
-  /* ── Expand/collapse lineup ──────────────────────────────────────────── */
-  .gc-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    border-top: 1px solid var(--border);
-    cursor: pointer;
-    font-size: 10px;
-    letter-spacing: 1px;
-    color: var(--fg3);
-    transition: color 0.15s;
-    user-select: none;
-  }
-  .gc-toggle:hover { color: var(--amber); }
-  .gc-lineups { display: none; }
-  .gc-lineups.open { display: grid; }
-
-  /* ── Loading overlay ─────────────────────────────────────────────────── */
-  #loading {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(12,12,8,0.85);
-    z-index: 500;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 16px;
-  }
-  #loading.show { display: flex; }
-  .spinner {
-    width: 32px; height: 32px;
-    border: 2px solid var(--border2);
-    border-top-color: var(--amber);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-size: 11px; letter-spacing: 2px; color: var(--fg3); }
-
-  /* ── Responsive ──────────────────────────────────────────────────────── */
-  @media (max-width: 700px) {
-    header { padding: 0 12px; }
-    main { padding: 12px; }
-    .bet-row, .bet-row-header {
-      grid-template-columns: 100px 36px 90px 60px 60px 70px 1fr;
-    }
-    .col-time { display: none; }
-    .games-grid { grid-template-columns: 1fr; }
-    .gc-odds { grid-template-columns: 1fr 1fr; }
-  }
+@media(max-width:640px){
+  .hdr{padding:0 12px}
+  main{padding:0}
+  .tbl-head,.bet{grid-template-columns:16px 90px 32px 80px 56px 60px 60px 1fr}
+  .bc-time{display:none}
+  .games-wrap{grid-template-columns:1fr;padding:10px}
+  .gc-odds{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
 
-<!-- ── Lock screen ─────────────────────────────────────────────────────── -->
 <div id="lock">
-  <div class="lock-logo">
-    Manu<em>Bets</em>
-    <span>MLB Model · Members Only</span>
-  </div>
-  <div class="lock-form">
-    <input id="pw-input" class="lock-input" type="password"
-           placeholder="enter password" autocomplete="current-password">
-    <button class="lock-btn" onclick="tryUnlock()">ENTER</button>
-    <div class="lock-error" id="pw-error"></div>
-    <div class="lock-hint">Access restricted to invited members</div>
+  <div class="lock-title">MANUBETS<small>MLB MODEL · MEMBERS ONLY</small></div>
+  <div class="lock-box">
+    <input id="pw" class="lock-input" type="password" placeholder="PASSWORD" autocomplete="current-password">
+    <button class="lock-btn" onclick="unlock()">ENTER</button>
+    <div class="lock-err" id="pw-err"></div>
   </div>
 </div>
 
-<!-- ── Loading overlay ─────────────────────────────────────────────────── -->
-<div id="loading">
-  <div class="spinner"></div>
-  <div class="loading-text">FETCHING DATA</div>
-</div>
+<div id="loading"><div class="spin"></div><div class="load-txt">LOADING</div></div>
 
-<!-- ── App ─────────────────────────────────────────────────────────────── -->
 <div id="app">
-
   <header>
-    <div class="h-logo">Manu<em>Bets</em></div>
-    <div class="h-center">
-      <button class="tab-btn active" onclick="switchView('bets', this)">BET LIST</button>
-      <button class="tab-btn"        onclick="switchView('games', this)">GAMES</button>
+    <div class="hdr">
+      <div class="brand">MANUBETS <span style="color:var(--ink3);font-weight:400">/ MLB</span></div>
+      <div class="tabs">
+        <button class="tab on" onclick="setView('bets',this)">BET LIST</button>
+        <button class="tab"    onclick="setView('games',this)">GAMES</button>
+      </div>
+      <div class="hdr-right">
+        <div class="live"></div>
+        <div class="upd" id="upd">—</div>
+        <button class="refresh" onclick="load()">↻ REFRESH</button>
+      </div>
     </div>
-    <div class="h-right">
-      <span class="dot"></span>
-      <span id="updated-label">—</span>
-      <button class="refresh-btn" onclick="loadData()">↻ REFRESH</button>
+    <div class="ticker">
+      <div class="tick"><span class="tick-l">Date</span><span class="tick-v" id="t-date">—</span></div>
+      <div class="tick"><span class="tick-l">Games</span><span class="tick-v" id="t-games">—</span></div>
+      <div class="tick"><span class="tick-l">Strong</span><span class="tick-v" id="t-strong">—</span><span class="tick-s">≥5%</span></div>
+      <div class="tick"><span class="tick-l">Moderate</span><span class="tick-v" id="t-mod">—</span><span class="tick-s">≥2%</span></div>
+      <div class="tick"><span class="tick-l">Updated</span><span class="tick-v" id="t-upd" style="font-size:10px">—</span></div>
     </div>
   </header>
 
-  <div id="ticker">
-    <div class="tick-item">
-      <span class="tick-label">Date</span>
-      <span class="tick-value" id="tick-date">—</span>
-    </div>
-    <div class="tick-div"></div>
-    <div class="tick-item">
-      <span class="tick-label">Games</span>
-      <span class="tick-value" id="tick-games">—</span>
-    </div>
-    <div class="tick-div"></div>
-    <div class="tick-item">
-      <span class="tick-label">Strong Edges</span>
-      <span class="tick-value" id="tick-strong">—</span>
-      <span class="tick-sub">≥5%</span>
-    </div>
-    <div class="tick-div"></div>
-    <div class="tick-item">
-      <span class="tick-label">Moderate</span>
-      <span class="tick-value" id="tick-mod">—</span>
-      <span class="tick-sub">≥2%</span>
-    </div>
-    <div class="tick-div"></div>
-    <div class="tick-item">
-      <span class="tick-label">Last Update</span>
-      <span class="tick-value" id="tick-updated" style="font-size:11px;">—</span>
-    </div>
-  </div>
-
   <main>
-
-    <!-- BET LIST VIEW -->
-    <div class="view active" id="view-bets">
-      <div class="filter-row">
-        <span class="filter-label">Edge</span>
-        <button class="filter-btn on"  data-ef="all"      onclick="setEdgeFilter(this)">ALL</button>
-        <button class="filter-btn"     data-ef="strong"   onclick="setEdgeFilter(this)">STRONG</button>
-        <button class="filter-btn"     data-ef="moderate" onclick="setEdgeFilter(this)">MODERATE+</button>
-        <div class="filter-sep"></div>
-        <span class="filter-label">Type</span>
-        <button class="filter-btn on"  data-tf="ML"   onclick="setTypeFilter(this)">ML</button>
-        <button class="filter-btn on"  data-tf="OVER"  onclick="setTypeFilter(this, true)">OVER</button>
-        <button class="filter-btn on"  data-tf="UNDER" onclick="setTypeFilter(this, true)">UNDER</button>
+    <div class="view on" id="view-bets">
+      <div class="fbar">
+        <span class="flbl">Edge</span>
+        <button class="fbtn on" data-ef="all"      onclick="setEF(this)">ALL</button>
+        <button class="fbtn"    data-ef="strong"   onclick="setEF(this)">STRONG</button>
+        <button class="fbtn"    data-ef="moderate" onclick="setEF(this)">MOD+</button>
       </div>
-      <div id="bet-list-container"></div>
+      <div class="tbl-head">
+        <div class="th"></div>
+        <div class="th">GAME</div>
+        <div class="th">TYPE</div>
+        <div class="th">SIDE</div>
+        <div class="th">BOOK</div>
+        <div class="th">FAIR</div>
+        <div class="th">EDGE</div>
+        <div class="th">EV</div>
+        <div class="th" style="text-align:right">TIME</div>
+      </div>
+      <div id="bet-list"></div>
     </div>
 
-    <!-- GAMES VIEW -->
     <div class="view" id="view-games">
-      <div class="games-grid" id="games-grid"></div>
+      <div class="games-wrap" id="games-grid"></div>
     </div>
-
   </main>
 </div>
 
 <script>
-// =============================================================================
-// CONFIG
-// =============================================================================
-const DATA_URL      = 'data.json';
-const PASSWORD_HASH = '121c2ecbc9bc307df06c85c863b9ef8fc5aa512fcbeec25f667d2a2d9e33a5dd'; // replaced by setup script
-const SESSION_KEY   = 'mlb_session';
-const EDGE_HIGH     = 0.05;
-const EDGE_LOW      = 0.02;
+const PW_HASH='%%PASSWORD_HASH%%';
+const SK='mlb_auth';
+let DATA=null, ef='all';
 
-// =============================================================================
-// AUTH
-// =============================================================================
-async function hashPassword(pw) {
-  const buf = await crypto.subtle.digest(
-    'SHA-256', new TextEncoder().encode(pw + 'manubets_salt_2026')
-  );
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+async function sha(pw){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw+'manubets_salt_2026'));
+  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function unlock(){
+  const pw=document.getElementById('pw').value;
+  const err=document.getElementById('pw-err');
+  if(!pw){err.textContent='enter password';return;}
+  const h=await sha(pw);
+  if(h===PW_HASH){sessionStorage.setItem(SK,h);show();}
+  else{err.textContent='incorrect password';document.getElementById('pw').value='';document.getElementById('pw').focus();}
+}
+function show(){
+  document.getElementById('lock').style.display='none';
+  document.getElementById('app').classList.add('on');
+  load();
+}
+document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')unlock();});
+(async()=>{if(sessionStorage.getItem(SK)===PW_HASH)show();})();
+
+async function load(){
+  document.getElementById('loading').classList.add('on');
+  try{
+    const r=await fetch('data.json?t='+Date.now());
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    DATA=await r.json();
+    tick(); renderBets(); renderGames();
+  }catch(e){
+    document.getElementById('bet-list').innerHTML=`<div class="empty"><div class="empty-big">!</div><p>${e.message}</p></div>`;
+  }finally{document.getElementById('loading').classList.remove('on');}
 }
 
-async function tryUnlock() {
-  const pw  = document.getElementById('pw-input').value;
-  const err = document.getElementById('pw-error');
-  if (!pw) { err.textContent = 'enter a password'; return; }
-  const h = await hashPassword(pw);
-  if (h === PASSWORD_HASH) {
-    sessionStorage.setItem(SESSION_KEY, h);
-    document.getElementById('lock').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
-    loadData();
-  } else {
-    err.textContent = 'incorrect password';
-    document.getElementById('pw-input').value = '';
-    document.getElementById('pw-input').focus();
-  }
+function tick(){
+  const m=DATA.meta;
+  const months=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const d=m.date?m.date.split('-'):null;
+  document.getElementById('t-date').textContent   = d?months[+d[1]-1]+' '+d[2]:'—';
+  document.getElementById('t-games').textContent  = m.n_games??'—';
+  document.getElementById('t-strong').textContent = m.n_strong??'—';
+  document.getElementById('t-mod').textContent    = m.n_moderate??'—';
+  const upd = m.updated_at ? new Date(m.updated_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/New_York'})+' ET' : '—';
+  document.getElementById('t-upd').textContent = upd;
+  document.getElementById('upd').textContent   = upd;
 }
 
-document.getElementById('pw-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') tryUnlock();
-});
+function fl(n){if(n==null||isNaN(n))return'—';const r=Math.round(n);return r>0?'+'+r:''+r;}
+function fe(e){if(e==null||isNaN(e))return'—';return(e>0?'+':'')+(e*100).toFixed(1)+'%';}
+function fev(e){if(e==null||isNaN(e))return'—';return(e>0?'+':'')+(e*100).toFixed(2)+'%';}
 
-// Check if already authenticated this session
-(async () => {
-  const stored = sessionStorage.getItem(SESSION_KEY);
-  if (stored && stored === PASSWORD_HASH) {
-    document.getElementById('lock').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
-    loadData();
-  }
-})();
-
-// =============================================================================
-// STATE
-// =============================================================================
-let DATA        = null;
-let edgeFilter  = 'all';     // 'all' | 'strong' | 'moderate'
-let typeFilters = new Set(['ML','OVER','UNDER']);
-
-// =============================================================================
-// DATA LOADING
-// =============================================================================
-async function loadData() {
-  showLoading(true);
-  try {
-    const r = await fetch(DATA_URL + '?t=' + Date.now());
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const raw = await r.json();
-    // bets comes as a JSON string (from jsonlite auto_unbox on a pre-serialised field)
-    DATA = {
-      meta:  raw.meta,
-      bets:  typeof raw.bets === 'string' ? JSON.parse(raw.bets) : raw.bets,
-      games: raw.games
-    };
-    updateTicker();
-    renderBets();
-    renderGames();
-  } catch(e) {
-    console.error(e);
-    document.getElementById('bet-list-container').innerHTML =
-      `<div class="empty-state"><div class="big">!</div><p>COULD NOT LOAD DATA — ${e.message}</p></div>`;
-  } finally {
-    showLoading(false);
-  }
-}
-
-function showLoading(v) {
-  document.getElementById('loading').classList.toggle('show', v);
-}
-
-// =============================================================================
-// TICKER
-// =============================================================================
-function updateTicker() {
-  const m = DATA.meta;
-  document.getElementById('tick-date').textContent    = fmtDate(m.date);
-  document.getElementById('tick-games').textContent   = m.n_games ?? '—';
-  document.getElementById('tick-strong').textContent  = m.n_strong ?? '—';
-  document.getElementById('tick-mod').textContent     = m.n_moderate ?? '—';
-  document.getElementById('tick-updated').textContent = fmtUpdated(m.updated_at);
-  document.getElementById('updated-label').textContent = fmtUpdated(m.updated_at);
-}
-
-function fmtDate(d) {
-  if (!d) return '—';
-  const [y,mo,day] = d.split('-');
-  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-  return `${months[+mo-1]} ${+day}`;
-}
-function fmtUpdated(iso) {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleTimeString('en-US', {
-      hour:'2-digit', minute:'2-digit', timeZone:'America/New_York'
-    }) + ' ET';
-  } catch { return iso; }
-}
-
-// =============================================================================
-// FILTERS
-// =============================================================================
-function setEdgeFilter(btn) {
-  document.querySelectorAll('[data-ef]').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  edgeFilter = btn.dataset.ef;
-  renderBets();
-}
-
-function setTypeFilter(btn, isTotal) {
-  const tf = btn.dataset.tf;
-  if (typeFilters.has(tf)) typeFilters.delete(tf);
-  else typeFilters.add(tf);
-  btn.classList.toggle('on', typeFilters.has(tf));
-  renderBets();
-}
-
-// =============================================================================
-// BET LIST RENDER
-// =============================================================================
-function filteredBets() {
-  if (!DATA?.bets) return [];
-  return DATA.bets.filter(b => {
-    if (edgeFilter === 'strong'   && b.tier !== 'strong') return false;
-    if (edgeFilter === 'moderate' && !['strong','moderate'].includes(b.tier)) return false;
-    const btype = b.type === 'ML' ? 'ML' : b.side.startsWith('O') ? 'OVER' : 'UNDER';
-    if (!typeFilters.has(btype)) return false;
+function filteredBets(){
+  if(!DATA?.bets) return[];
+  return DATA.bets.filter(b=>{
+    if(ef==='strong'   && b.tier!=='strong') return false;
+    if(ef==='moderate' && !['strong','moderate'].includes(b.tier)) return false;
     return true;
   });
 }
-
-function fmtLine(n) {
-  if (n == null || isNaN(n)) return '—';
-  return n > 0 ? '+' + Math.round(n) : '' + Math.round(n);
-}
-function fmtEdge(e) {
-  if (e == null || isNaN(e)) return '—';
-  return (e > 0 ? '+' : '') + (e * 100).toFixed(1) + '%';
-}
-function fmtEV(ev) {
-  if (ev == null || isNaN(ev)) return '—';
-  return (ev > 0 ? '+' : '') + (ev * 100).toFixed(2) + '%';
-}
-function tierClass(tier) {
-  return { strong:'strong', moderate:'moderate', slight:'slight', none:'none' }[tier] ?? 'none';
+function setEF(btn){
+  document.querySelectorAll('[data-ef]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); ef=btn.dataset.ef; renderBets();
 }
 
-function renderBets() {
-  const bets = filteredBets();
-  const el   = document.getElementById('bet-list-container');
-
-  if (!bets.length) {
-    el.innerHTML = `<div class="empty-state">
-      <div class="big">◌</div>
-      <p>NO BETS MATCH CURRENT FILTERS</p>
-    </div>`;
-    return;
-  }
-
-  const tiers = [
-    { key: 'strong',   label: '▲ STRONG EDGE',   badge: 'strong' },
-    { key: 'moderate', label: '◆ MODERATE EDGE',  badge: 'moderate' },
-    { key: 'slight',   label: '· SLIGHT EDGE',    badge: 'slight' },
-    { key: 'none',     label: '· NO EDGE',        badge: 'none' },
+function renderBets(){
+  const bets=filteredBets();
+  const el=document.getElementById('bet-list');
+  if(!bets.length){el.innerHTML='<div class="empty"><div class="empty-big">—</div><p>NO BETS MATCH FILTERS</p></div>';return;}
+  const tiers=[
+    {k:'strong',  l:'▲ STRONG EDGE',   b:'strong'},
+    {k:'moderate',l:'◆ MODERATE EDGE', b:'moderate'},
+    {k:'slight',  l:'· SLIGHT EDGE',   b:'slight'},
+    {k:'none',    l:'· NO EDGE',       b:'none'},
   ];
-
-  let html = `
-    <div class="bet-row-header">
-      <div class="bet-col">MATCHUP</div>
-      <div class="bet-col">TYPE</div>
-      <div class="bet-col">SIDE</div>
-      <div class="bet-col">BOOK</div>
-      <div class="bet-col">MODEL</div>
-      <div class="bet-col">EDGE</div>
-      <div class="bet-col">EV</div>
-      <div class="bet-col" style="text-align:right">TIME</div>
-    </div>`;
-
-  tiers.forEach(tier => {
-    const group = bets.filter(b => b.tier === tier.key);
-    if (!group.length) return;
-
-    html += `<div class="section-head">
-      ${tier.label}
-      <span class="badge badge-${tier.badge}">${group.length}</span>
-    </div>`;
-
-    group.forEach(b => {
-      const tc = tierClass(b.tier);
-      const ev = b.ev;
-      html += `<div class="bet-row ${tc}">
-        <div class="bet-col col-matchup">${b.matchup ?? '—'}</div>
-        <div class="bet-col"><span class="col-type">${b.type}</span></div>
-        <div class="bet-col col-side">${b.side ?? '—'}</div>
-        <div class="bet-col col-line">${fmtLine(b.book_line)}</div>
-        <div class="bet-col col-model">${fmtLine(b.model_line)}</div>
-        <div class="bet-col col-edge ${tc}">${fmtEdge(b.edge)}</div>
-        <div class="bet-col col-ev ${ev > 0 ? 'pos' : ''}">${fmtEV(ev)}</div>
-        <div class="bet-col col-time">${b.game_time ?? ''}</div>
+  let h='';
+  tiers.forEach(tier=>{
+    const grp=bets.filter(b=>b.tier===tier.k);
+    if(!grp.length) return;
+    h+=`<div class="sec-hd"><span class="sec-lbl">${tier.l}</span><span class="sec-badge badge-${tier.b}">${grp.length}</span></div>`;
+    grp.forEach(b=>{
+      const t=b.tier||'none';
+      h+=`<div class="bet ${t}">
+        <div class="bc"><div class="bflag"></div></div>
+        <div class="bc bc-match">${b.matchup||'—'}</div>
+        <div class="bc"><span class="bc-type">${b.type||'ML'}</span></div>
+        <div class="bc">${b.side||'—'}</div>
+        <div class="bc bc-num">${fl(b.line)}</div>
+        <div class="bc bc-num" style="color:var(--ink3)">${fl(b.fair)}</div>
+        <div class="bc bc-edge ${t}">${fe(b.edge)}</div>
+        <div class="bc bc-ev ${b.ev>0?'pos':''}">${fev(b.ev)}</div>
+        <div class="bc bc-time">${b.time||''}</div>
       </div>`;
     });
   });
-
-  el.innerHTML = html;
+  el.innerHTML=h;
 }
 
-// =============================================================================
-// GAMES VIEW RENDER
-// =============================================================================
-function renderGames() {
-  const el = document.getElementById('games-grid');
-  if (!DATA?.games?.length) {
-    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <div class="big">◌</div><p>NO GAMES TODAY</p></div>`;
-    return;
-  }
+function renderGames(){
+  const el=document.getElementById('games-grid');
+  if(!DATA?.games?.length){el.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-big">—</div><p>NO GAMES</p></div>';return;}
+  el.innerHTML=DATA.games.map((g,gi)=>{
+    const ba=g.bets?.away, bh=g.bets?.home;
+    const best=[ba,bh].filter(Boolean).sort((a,b)=>(b.edge||0)-(a.edge||0))[0];
+    const bestLabel=best&&['strong','moderate'].includes(best.tier)?`▸ ${best.side} ${fe(best.edge)}`:'';
 
-  el.innerHTML = DATA.games.map((g, gi) => {
-    const bets = g.bets ?? [];
-    const bestBet = bets.find(b => ['strong','moderate'].includes(b.tier));
+    const oddsBoxes=[
+      {lbl:g.away_abbr+' ML', val:fl(g.odds?.book_a), tier:ba?.tier||'none', edge:fe(ba?.edge)},
+      {lbl:g.home_abbr+' ML', val:fl(g.odds?.book_h), tier:bh?.tier||'none', edge:fe(bh?.edge)},
+      {lbl:'OVER',  val:fl(g.odds?.over_ml),  tier:'none', edge:'—'},
+      {lbl:'UNDER', val:fl(g.odds?.under_ml), tier:'none', edge:'—'},
+    ].map(b=>`<div class="gc-ob">
+      <div class="gc-ol">${b.lbl}</div>
+      <div class="gc-ov">${b.val}</div>
+      <div class="gc-oe ${b.tier}">${b.edge}</div>
+    </div>`).join('');
 
-    const oddsBoxes = [
-      { label: `${g.away_abbr} ML`, val: fmtLine(g.odds?.ml_away), side: g.away_abbr, type: 'ML' },
-      { label: `${g.home_abbr} ML`, val: fmtLine(g.odds?.ml_home), side: g.home_abbr, type: 'ML' },
-      { label: `O ${g.odds?.total ?? '?'}`,  val: fmtLine(g.odds?.over_line),  side: null, type: 'OVER' },
-      { label: `U ${g.odds?.total ?? '?'}`,  val: fmtLine(g.odds?.under_line), side: null, type: 'UNDER' },
-    ].map(box => {
-      const bet = bets.find(b =>
-        b.type === box.type &&
-        (box.side ? b.side === box.side : b.side?.startsWith(box.type === 'OVER' ? 'O' : 'U'))
-      );
-      const tier = bet?.tier ?? 'none';
-      const edgeTxt = bet ? fmtEdge(bet.edge) : 'no edge';
-      return `<div class="gc-odds-box">
-        <div class="gc-odds-label">${box.label}</div>
-        <div class="gc-odds-val">${box.val}</div>
-        <div class="gc-odds-edge ${tier}">${edgeTxt}</div>
-      </div>`;
-    }).join('');
+    const batters=(lu,abbr)=>(lu||[]).map(p=>`<div class="gc-brow">
+      <span class="gc-bn">${p.order}</span>
+      <span class="gc-bname">${(p.name||'').replace(' '+abbr,'')}</span>
+      <span class="gc-bhand">${p.hand||''}</span>
+    </div>`).join('');
 
-    const awayBatters = (g.away_lineup ?? []).map(p =>
-      `<div class="gc-batter">
-        <span class="gc-batter-num">${p.order}</span>
-        <span class="gc-batter-name">${p.name ?? ''}</span>
-        <span class="gc-batter-hand">${p.hand ?? ''}</span>
-      </div>`
-    ).join('');
-
-    const homeBatters = (g.home_lineup ?? []).map(p =>
-      `<div class="gc-batter">
-        <span class="gc-batter-num">${p.order}</span>
-        <span class="gc-batter-name">${p.name ?? ''}</span>
-        <span class="gc-batter-hand">${p.hand ?? ''}</span>
-      </div>`
-    ).join('');
-
-    const hasLineups = awayBatters || homeBatters;
-
-    return `<div class="game-card">
-      <div class="gc-head">
+    return`<div class="gc">
+      <div class="gc-hd" onclick="toggleLU(${gi},this)">
         <div>
-          <div class="gc-teams">${g.away_abbr} <span style="color:var(--fg3);font-size:14px">@</span> ${g.home_abbr}</div>
-          <div class="gc-meta">${g.away_pitcher?.name ?? 'TBD'} vs ${g.home_pitcher?.name ?? 'TBD'} · ${g.venue ?? ''}</div>
+          <div class="gc-teams">${g.away_abbr}<span class="gc-at">@</span>${g.home_abbr}</div>
+          <div class="gc-meta">${g.away_pitcher?.name||'TBD'} vs ${g.home_pitcher?.name||'TBD'}</div>
         </div>
-        <div>
-          <div class="gc-time">${g.game_time ?? ''}</div>
-          ${bestBet ? `<div class="gc-best-bet">▸ ${bestBet.side} ${fmtEdge(bestBet.edge)}</div>` : ''}
+        <div class="gc-tr">
+          <div class="gc-time">${g.game_time||''}</div>
+          ${bestLabel?`<div class="gc-best">${bestLabel}</div>`:''}
         </div>
       </div>
       <div class="gc-odds">${oddsBoxes}</div>
-      ${hasLineups ? `
-        <div class="gc-toggle" onclick="toggleLineup(${gi})">
-          <span id="toggle-label-${gi}">SHOW LINEUPS ↓</span>
+      <div class="gc-lineups" id="lu-${gi}">
+        <div>
+          <div class="gc-lhd">${g.away_abbr} — AWAY</div>
+          <div class="gc-pitcher"><b>${g.away_pitcher?.name||'TBD'}</b>${g.away_pitcher?.throws?' · '+g.away_pitcher.throws+'HP':''}</div>
+          ${batters(g.away_lineup,g.away_abbr)}
         </div>
-        <div class="gc-lineups" id="lineup-${gi}">
-          <div class="gc-lineup-col">
-            <div class="gc-lineup-head">${g.away_abbr} — AWAY</div>
-            <div class="gc-pitcher">
-              <strong>${g.away_pitcher?.name ?? 'TBD'}</strong>
-              ${g.away_pitcher?.throws ? `· ${g.away_pitcher.throws}HP` : ''}
-            </div>
-            ${awayBatters}
-          </div>
-          <div class="gc-lineup-col">
-            <div class="gc-lineup-head">${g.home_abbr} — HOME</div>
-            <div class="gc-pitcher">
-              <strong>${g.home_pitcher?.name ?? 'TBD'}</strong>
-              ${g.home_pitcher?.throws ? `· ${g.home_pitcher.throws}HP` : ''}
-            </div>
-            ${homeBatters}
-          </div>
-        </div>` : ''}
+        <div>
+          <div class="gc-lhd">${g.home_abbr} — HOME</div>
+          <div class="gc-pitcher"><b>${g.home_pitcher?.name||'TBD'}</b>${g.home_pitcher?.throws?' · '+g.home_pitcher.throws+'HP':''}</div>
+          ${batters(g.home_lineup,g.home_abbr)}
+        </div>
+      </div>
+      <div class="gc-toggle" id="tgl-${gi}">▸ SHOW LINEUPS</div>
     </div>`;
   }).join('');
 }
 
-function toggleLineup(gi) {
-  const el  = document.getElementById('lineup-' + gi);
-  const lbl = document.getElementById('toggle-label-' + gi);
-  const open = el.classList.toggle('open');
-  lbl.textContent = open ? 'HIDE LINEUPS ↑' : 'SHOW LINEUPS ↓';
+function toggleLU(gi){
+  const el=document.getElementById('lu-'+gi);
+  const tgl=document.getElementById('tgl-'+gi);
+  const open=el.classList.toggle('on');
+  tgl.textContent=open?'▾ HIDE LINEUPS':'▸ SHOW LINEUPS';
 }
-
-// =============================================================================
-// VIEW SWITCHING
-// =============================================================================
-function switchView(view, btn) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('view-' + view).classList.add('active');
-  btn.classList.add('active');
+function setView(v,btn){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.getElementById('view-'+v).classList.add('on');
+  btn.classList.add('on');
 }
-
-// Auto-refresh every 30 min
-setInterval(loadData, 30 * 60 * 1000);
+setInterval(load,30*60*1000);
 </script>
 </body>
 </html>
