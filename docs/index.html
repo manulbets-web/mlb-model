@@ -477,10 +477,17 @@ function toggleSection(gi,section,btn){
 // ─ Player picker ─
 function openPicker(tab,side,slotIdx,abbr){
   pickerCallback={tab,side,slotIdx,abbr};
-  const pool=DATA.roster_pool?.[abbr]||[];
-  document.getElementById('picker-title').textContent=`Change player — ${abbr} ${side} #${slotIdx+1}`;
+  // Build full pool from ALL teams so cross-team selection works
+  const allPlayers=[];
+  const pool=DATA.roster_pool||{};
+  Object.entries(pool).forEach(([team,players])=>{
+    (players||[]).forEach(p=>allPlayers.push({...p,team}));
+  });
+  allPlayers.sort((a,b)=>a.name.localeCompare(b.name));
+  pickerCallback.allPlayers=allPlayers;
+  document.getElementById('picker-title').textContent=`Change player — ${abbr} ${side} slot ${slotIdx+1}`;
   document.getElementById('picker-search').value='';
-  renderPickerList(pool,'');
+  renderPickerList(allPlayers,'');
   document.getElementById('picker-overlay').classList.add('on');
   document.getElementById('picker-search').focus();
 }
@@ -490,35 +497,36 @@ function closePicker(){
 }
 function filterPicker(){
   const q=document.getElementById('picker-search').value.toLowerCase();
-  const abbr=pickerCallback?.abbr;
-  if(!abbr) return;
-  renderPickerList(DATA.roster_pool?.[abbr]||[],q);
+  if(!pickerCallback?.allPlayers) return;
+  renderPickerList(pickerCallback.allPlayers,q);
 }
 function renderPickerList(pool,q){
   const el=document.getElementById('picker-list');
   const filtered=pool.filter(p=>
     !q||p.name?.toLowerCase().includes(q)||p.position?.toLowerCase().includes(q));
   if(!filtered.length){el.innerHTML='<div class="picker-empty">No players found</div>';return;}
-  el.innerHTML=filtered.map(p=>`
-    <div class="picker-player" onclick="selectPlayer('${p.name}','${p.position||'?'}')">
+  el.innerHTML=filtered.slice(0,80).map(p=>`
+    <div class="picker-player" onclick="selectPlayer('${p.name}','${p.position||'?'}','${p.team||''}')">
       <span class="picker-player-name">${p.name}</span>
+      <span style="font-size:10px;color:var(--ink3);font-family:var(--mono);margin-right:4px">${p.team||''}</span>
       <span class="picker-player-pos">${p.position||'?'}</span>
     </div>`).join('');
 }
-function selectPlayer(name,pos){
+function selectPlayer(name,pos,team){
   if(!pickerCallback) return;
   const {tab,side,slotIdx,abbr}=pickerCallback;
+  // Use the selected player's actual team for the lookup suffix
+  const suffix=team||abbr;
   const key=tab+'_'+side;
   const g=DATA.games.find(x=>x.tab===tab);
   if(!g) return;
   const original=side==='away'?[...g.away_lineup]:[...g.home_lineup];
   if(!overrides[key]) overrides[key]=[...original];
   if(overrides[key][slotIdx])
-    overrides[key][slotIdx]={...overrides[key][slotIdx],name:name+' '+abbr};
+    overrides[key][slotIdx]={...overrides[key][slotIdx],name:name+' '+suffix};
   else
-    overrides[key][slotIdx]={order:slotIdx+1,pos:'x',name:name+' '+abbr,hand:'R'};
+    overrides[key][slotIdx]={order:slotIdx+1,pos:'x',name:name+' '+suffix,hand:'R'};
 
-  // Re-render just that game card's lineup
   const gi=DATA.games.findIndex(x=>x.tab===tab);
   const gridEl=document.getElementById('gc-lu-grid-'+gi);
   if(gridEl) gridEl.innerHTML=renderLineupCol(g,'away')+renderLineupCol(g,'home');
