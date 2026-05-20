@@ -153,7 +153,7 @@ message("  Game tabs: ", paste(game_tabs, collapse=", "))
 # Detect lineup row positions from first game tab
 message("\n── Detecting lineup row positions...")
 template_data <- googlesheets4::read_sheet(copy_id, sheet=game_tabs[1],
-                                           col_names=FALSE, col_types="c")
+                                            col_names=FALSE, col_types="c")
 col_a <- as.character(template_data[[1]])
 hits  <- which(col_a %in% c("1","1.0"))
 if (length(hits)>=4) {
@@ -234,8 +234,8 @@ fg_lu <- tryCatch({
     if (!length(pl)) return(list())
     pl <- pl[order(sapply(pl,function(x)as.integer(x$BatOrder%||%99)))]
     lapply(pl,function(x)list(name=x$PlayerName%||%"?",bats=x$Bats%||%"R",
-                              position=x$DisplayPosition%||%"",
-                              projected=isTRUE(x$IsProjected)))
+                               position=x$DisplayPosition%||%"",
+                               projected=isTRUE(x$IsProjected)))
   }
   res <- list()
   for (g in gf) {
@@ -331,7 +331,7 @@ lu_range_data <- function(pl, abbr, n=9) {
     pos <- tolower(p$position%||%"x")
     tibble(
       order    = as.numeric(i),
-      position = if(pos=="c")"c" else "x",
+      position = dplyr::case_when(pos=="c" ~ "c", pos %in% c("dh","d") ~ "dh", TRUE ~ "x"),
       name     = paste(strip_accents(p$name%||%"?"), abbr),
       hand     = p$bats%||%"R"
     )
@@ -344,14 +344,14 @@ for (i in seq_len(nrow(games))) {
   pk    <- as.character(g$game_pk)
   sname <- substr(paste0(g$away_abbr,g$home_abbr),1L,31L)
   lu    <- lus[[pk]]
-  
+
   if (!sname %in% game_tabs) {
     message("  [SKIP] ",sname," not in sheet"); next
   }
-  
+
   al <- paste(strip_accents(g$away_pname), g$away_abbr)
   hl <- paste(strip_accents(g$home_pname), g$home_abbr)
-  
+
   # Helper: write to a specific cell range
   write_cell <- function(row, col, value) {
     range <- paste0(LETTERS[col], row)
@@ -363,13 +363,13 @@ for (i in seq_len(nrow(games))) {
       error=function(e) message("    [warn] ",range,": ",e$message)
     )
   }
-  
+
   # Pitcher header rows
   write_cell(lr$at-1L, 3L, al); write_cell(lr$at-1L, 4L, g$away_throws)
   write_cell(lr$ht-1L, 3L, hl); write_cell(lr$ht-1L, 4L, g$home_throws)
   write_cell(lr$ab-1L, 3L, al); write_cell(lr$ab-1L, 4L, g$away_throws)
   write_cell(lr$hb-1L, 3L, hl); write_cell(lr$hb-1L, 4L, g$home_throws)
-  
+
   # Write lineups as blocks (4 cols wide)
   write_block <- function(pl, abbr, start_row) {
     if (!length(pl)) return(invisible(NULL))
@@ -384,10 +384,10 @@ for (i in seq_len(nrow(games))) {
     )
     Sys.sleep(0.3)  # respect API rate limits
   }
-  
+
   write_block(lu$away, g$away_abbr, lr$at)
   write_block(lu$home, g$home_abbr, lr$ht)
-  
+
   # Bottom block: mirror top block using USER_ENTERED input so formulas evaluate
   write_mirror_block_formula <- function(top_start, bot_start, n=9) {
     # Build a list of cell:formula pairs and write via the Sheets API
@@ -415,7 +415,7 @@ for (i in seq_len(nrow(games))) {
     }
     Sys.sleep(0.5)
   }
-  
+
   # For formulas to be interpreted, use sheets_edit with USER_ENTERED
   # googlesheets4 range_write uses RAW by default — we need a workaround:
   # Write the formula as a named range using the low-level API
@@ -428,17 +428,17 @@ for (i in seq_len(nrow(games))) {
     )
     tryCatch(
       googlesheets4::request_generate("sheets.spreadsheets.values.update",
-                                      params = req) |> googlesheets4::request_make(),
+        params = req) |> googlesheets4::request_make(),
       error = function(e) NULL
     )
   }
-  
+
   # Mirror pitcher headers
   write_formula_cell(lr$ab-1L, "C", paste0("=C", lr$at-1L))
   write_formula_cell(lr$ab-1L, "D", paste0("=D", lr$at-1L))
   write_formula_cell(lr$hb-1L, "C", paste0("=C", lr$ht-1L))
   write_formula_cell(lr$hb-1L, "D", paste0("=D", lr$ht-1L))
-  
+
   # Mirror batter rows
   for (i in seq_len(9)) {
     for (col_letter in c("A","B","C","D")) {
@@ -447,7 +447,7 @@ for (i in seq_len(nrow(games))) {
     }
     Sys.sleep(0.1)
   }
-  
+
   message("  ✓  ",sname,"  (",strip_accents(g$away_pname)," vs ",strip_accents(g$home_pname),")")
 }
 
@@ -476,10 +476,10 @@ model_data <- purrr::map_dfr(read_tabs, function(tab) {
     error=function(e){message("  [WARN] ",tab,": ",e$message);NULL}
   )
   if (is.null(df)||nrow(df)<5) return(NULL)
-  
+
   col_b <- as.character(df[[2]])
   col_c <- as.character(df[[3]])
-  
+
   # Pitcher names
   pitcher_rows <- which(col_b=="Pitcher")
   away_p <- if(length(pitcher_rows)>=1)
@@ -488,14 +488,14 @@ model_data <- purrr::map_dfr(read_tabs, function(tab) {
   home_p <- if(length(pitcher_rows)>=2)
     str_trim(gsub("\\s+[A-Z]{2,3}$","",as.character(df[[pitcher_rows[2],3]])))
   else "TBD"
-  
+
   # Summary rows — "Team" / "Replacement Wins" block
   sr <- which(col_b=="Team" & col_c=="Replacement Wins")[1]
   if (is.na(sr)) return(NULL)
-  
+
   # Total block
   tr <- which(col_b=="Team" & col_c=="RS 162")[1]
-  
+
   mid <- nchar(tab) %/% 2 + nchar(tab) %% 2
   tibble(
     tab          = tab,
@@ -547,7 +547,7 @@ model_data |>
     book_away = fmt_ml(book_ml_away),
     book_home = fmt_ml(book_ml_home),
     total_fmt = ifelse(is.na(model_total),"—",
-                       paste0(round(model_total,1)," / ",round(model_total2,1))),
+                  paste0(round(model_total,1)," / ",round(model_total2,1))),
     over_fmt  = fmt_ml(over_ml),
     under_fmt = fmt_ml(under_ml)
   ) |>
