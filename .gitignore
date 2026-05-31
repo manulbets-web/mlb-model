@@ -1,0 +1,6 @@
+data_f5/
+*.xlsx
+*.csv
+__pycache__/
+.DS_Store
+live_snapshots/
