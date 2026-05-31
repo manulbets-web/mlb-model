@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>First 5 Innings Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#fbfbf9; --surface:#ffffff; --raise:#f6f6f3;
+  --line:#e9e8e3; --line2:#dedcd5;
+  --ink:#17191c; --ink2:#5c626a; --ink3:#9ba0a6;
+  --accent:#127a4d; --accent-soft:#e6f3ec;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Schibsted Grotesk',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);
+  line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px 96px}
+
+
+header{padding:46px 0 26px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink3)}
+h1.title{font-weight:800;font-size:clamp(36px,6vw,54px);letter-spacing:-.035em;line-height:1;margin:10px 0 0}
+.sub{color:var(--ink2);font-size:14.5px;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin-top:14px}
+.sub b{color:var(--ink);font-weight:600}
+.sub .sep{color:var(--line2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--ink2);background:var(--surface)}
+.chip .n{font-family:var(--mono);font-weight:600;color:var(--ink)}
+.pip{width:9px;height:9px;border-radius:50%;flex:none}
+.pip.strong{background:var(--accent)}
+.pip.moderate{background:var(--accent);opacity:.45}
+.pip.slight{background:var(--ink3);opacity:.5}
+
+.bar{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:48px 0 14px;flex-wrap:wrap}
+.bar h2{font-weight:700;font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--ink)}
+.bar h2 span{color:var(--ink3);font-family:var(--mono);font-size:12px;font-weight:400;margin-left:8px;text-transform:none;letter-spacing:0}
+.tabs{display:flex;gap:2px}
+.tabs button{background:none;border:none;color:var(--ink3);font-family:var(--sans);font-weight:600;font-size:13px;padding:6px 12px;border-radius:7px;cursor:pointer;transition:.12s}
+.tabs button.active{background:var(--ink);color:#fff}
+.tabs button:hover:not(.active){color:var(--ink)}
+
+.board{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.row{display:grid;grid-template-columns:14px 58px 1fr 78px 70px 132px;gap:14px;align-items:center;padding:13px 18px;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border-bottom:none}
+.row.head{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:10px 18px}
+.tier-dot{width:9px;height:9px;border-radius:50%}
+.tier-dot.strong{background:var(--accent)}
+.tier-dot.moderate{background:var(--accent);opacity:.42}
+.tier-dot.slight{background:var(--ink3);opacity:.5}
+.tier-dot.none{background:var(--line2)}
+.mkt{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--ink2)}
+.side{font-weight:600}
+.side small{color:var(--ink3);font-weight:400;margin-left:7px;font-family:var(--mono);font-size:12px}
+.num{font-family:var(--mono);font-weight:500;text-align:right;color:var(--ink2)}
+.edge{font-family:var(--mono);font-weight:600;text-align:right;color:var(--accent)}
+.matchcell{color:var(--ink3);font-family:var(--mono);font-size:12px;text-align:right;white-space:nowrap}
+.empty{padding:38px 18px;text-align:center;color:var(--ink3);font-family:var(--mono);font-size:13px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 18px 4px;opacity:0;transform:translateY(8px);animation:rise .45s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+.card-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px}
+.match{font-weight:800;font-size:22px;letter-spacing:-.03em}
+.match .at{color:var(--ink3);font-weight:500;margin:0 6px}
+.gtime{font-family:var(--mono);font-size:11px;color:var(--ink3);white-space:nowrap}
+.sp{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.sp:first-of-type{border-top:1px solid var(--line);margin-top:13px}
+.sp .who{min-width:0}
+.sp .nm{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp .meta{font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.sp .era{font-family:var(--mono);font-size:13px;color:var(--ink3);text-align:right;white-space:nowrap}
+.sp .era b{color:var(--ink);font-weight:600}
+.winbar{height:4px;border-radius:3px;background:var(--line);overflow:hidden;margin:14px 0 6px;position:relative}
+.winbar>i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.wlabels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink2)}
+.wlabels b{color:var(--ink)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.k{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;justify-content:space-between}
+.v{font-family:var(--mono);font-weight:600;font-size:15px;margin-top:4px;color:var(--ink)}
+.v small{font-size:11px;color:var(--ink3);font-weight:400}
+.vsub{font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-top:3px;letter-spacing:-.01em}
+.kv .full{grid-column:1/3}
+.flag{font-family:var(--mono);font-size:11px;font-weight:600}
+.flag.pos{color:var(--accent)} .flag.neg{color:var(--ink3)}
+.lean{font-family:var(--mono);font-size:10.5px;font-weight:600}
+.lean.over,.lean.under{color:var(--accent)}
+.lean.none{color:var(--ink3)}
+.toggle{width:100%;background:none;border:none;border-top:1px solid var(--line);color:var(--ink3);font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:11px 0 12px;cursor:pointer;margin-top:14px;transition:.12s}
+.toggle:hover{color:var(--ink)}
+.lu{display:none;border-top:1px solid var(--line);padding:14px 0 6px;grid-template-columns:1fr 1fr;gap:18px}
+.lu.open{display:grid}
+.lu h4{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px}
+.lu ol{list-style:none;font-size:13px}
+.lu li{display:flex;gap:8px;padding:2.5px 0;color:var(--ink2)}
+.lu li .o{font-family:var(--mono);color:var(--ink3);width:13px}
+.lu li .pos{font-family:var(--mono);font-size:10px;color:var(--ink3);margin-left:auto;align-self:center}
+footer{margin-top:54px;padding-top:22px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--ink3);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.hidden{display:none!important}
+@media(max-width:640px){
+  .row{grid-template-columns:12px 50px 1fr 70px;gap:10px;font-size:13px}
+  .row .num.ev,.row .matchcell{display:none}
+}
+</style>
+</head>
+<body>
+
+</div>
+
+<div class="wrap" id="app">
+  <header>
+    <div class="eyebrow">MLB</div>
+    <h1 class="title">First 5 Innings Model</h1>
+    <div class="sub" id="sub"></div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div class="bar">
+    <h2>Top Edges <span id="edgeCount"></span></h2>
+    <div class="tabs" id="mktTabs">
+      <button data-m="ALL" class="active">All</button>
+      <button data-m="ML">Moneyline</button>
+      <button data-m="TOTAL">Totals</button>
+    </div>
+  </div>
+  <div class="board" id="board"></div>
+
+  <div class="bar"><h2>Games <span id="gameCount"></span></h2></div>
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    <span id="foot"></span>
+    <span>F5 = first five innings · starter-only run prevention</span>
+  </footer>
+</div>
+
+<script>
+
+window.addEventListener("DOMContentLoaded", load);
+const fmtOdds=x=>x==null?"—":(x>0?"+"+Math.round(x):""+Math.round(x));
+const fmtPct=x=>x==null?"—":(x*100).toFixed(1)+"%";
+const BOOK_ABBR={DraftKings:"DK",FanDuel:"FD",BetMGM:"MGM",Caesars:"CZR",Fanatics:"FAN",Fliff:"FLF",PointsBet:"PB",BetRivers:"BR",ESPNBET:"ESPN","ESPN BET":"ESPN",WynnBET:"WYN",Bovada:"BOV",BetOnline:"BOL","LowVig.ag":"LV"};
+const shortBook=n=>!n?"":(BOOK_ABBR[n]||n.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase());
+const bk=n=>n?` ${shortBook(n)}`:"";
+let DATA=null, MKT="ALL";
+
+async function load(){
+  try{
+    const r=await fetch("data.json?_="+Date.now(),{cache:"no-store"});
+    DATA=await r.json();
+  }catch(e){
+    document.getElementById("board").innerHTML='<div class="empty">Could not load data.json — has it been pushed yet?</div>';
+    return;
+  }
+  renderHeader(); renderBoard(); renderGames();
+}
+
+function renderHeader(){
+  const m=DATA.meta;
+  const d=new Date(m.date+"T12:00:00");
+  const ds=d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+  const up=new Date(m.updated_at);
+  document.getElementById("sub").innerHTML=
+    `<b>${ds}</b><span class="sep">/</span>`+
+    `<b>${m.n_games}</b> games<span class="sep">/</span>`+
+    `lg off <b>${m.league_avg_off??"—"}</b> r/5<span class="sep">/</span>`+
+    `lg ERA <b>${m.league_avg_era??"—"}</b>`;
+  document.getElementById("chips").innerHTML=
+    `<span class="chip"><span class="pip strong"></span>Strong <span class="n">${m.n_strong}</span></span>`+
+    `<span class="chip"><span class="pip moderate"></span>Moderate <span class="n">${m.n_moderate}</span></span>`+
+    `<span class="chip"><span class="pip slight"></span>Slight <span class="n">${m.n_slight}</span></span>`;
+  document.getElementById("foot").textContent=
+    "Updated "+up.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+" UTC";
+}
+
+function renderBoard(){
+  const tabs=document.getElementById("mktTabs");
+  tabs.querySelectorAll("button").forEach(b=>{
+    b.onclick=()=>{MKT=b.dataset.m;tabs.querySelectorAll("button").forEach(x=>x.classList.remove("active"));b.classList.add("active");renderBoard();};
+  });
+  let bets=(Array.isArray(DATA.bets)?DATA.bets:[]).filter(b=>(MKT==="ALL"||b.market===MKT)&&b.tier!=="none");
+  const board=document.getElementById("board");
+  const head=`<div class="row head"><span></span><span>Mkt</span><span>Side · Odds</span><span class="num">Edge</span><span class="num ev">EV</span><span class="matchcell">Game · Time</span></div>`;
+  if(!bets.length){board.innerHTML=head+'<div class="empty">No qualifying edges right now.</div>';document.getElementById("edgeCount").textContent="(0)";return;}
+  document.getElementById("edgeCount").textContent=`(${bets.length})`;
+  board.innerHTML=head+bets.map(b=>{
+    const isTot=b.market==="TOTAL";
+    const edgeTxt=isTot?(b.edge!=null?`+${b.edge} r`:"—"):fmtPct(b.edge);
+    const ev=b.ev!=null?fmtPct(b.ev):"—";
+    return `<div class="row">
+      <span class="tier-dot ${b.tier}"></span>
+      <span class="mkt">${b.market}</span>
+      <span class="side">${b.side}<small>${fmtOdds(b.line)}</small></span>
+      <span class="edge">${edgeTxt}</span>
+      <span class="num ev">${ev}</span>
+      <span class="matchcell">${b.matchup}${b.time?" · "+b.time:""}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderGames(){
+  const games=(Array.isArray(DATA.games)?DATA.games:[]);
+  document.getElementById("gameCount").textContent=`(${games.length})`;
+  const grid=document.getElementById("grid");
+  if(!games.length){grid.innerHTML='<div class="empty">No games projected yet.</div>';return;}
+  grid.innerHTML=games.map((g,i)=>card(g,i)).join("");
+  grid.querySelectorAll(".toggle").forEach(t=>{
+    t.onclick=()=>{const lu=t.nextElementSibling;lu.classList.toggle("open");
+      t.textContent=lu.classList.contains("open")?"Hide lineups":"Lineups";};
+  });
+}
+
+function flag(e){
+  if(e==null)return "";
+  const pos=e>0;
+  return `<span class="flag ${pos?'pos':'neg'}">${pos?'+':''}${fmtPct(e)}</span>`;
+}
+
+function card(g,i){
+  const ml=g.ml,t=g.totals,r=g.runs;
+  const aw=ml.away_wpct!=null?ml.away_wpct:0.5;
+  const leanCls=t.lean||"none";
+  const leanTxt=t.lean?`${t.lean.toUpperCase()} +${t.lean_runs}r`:"no lean";
+  const lu=side=>{
+    const arr=g[side+"_lineup"]||[];
+    if(!arr.length)return '<div style="color:var(--ink3);font-size:12px">—</div>';
+    return "<ol>"+arr.map(p=>`<li><span class="o">${p.order}</span><span>${p.name}</span><span class="pos">${p.pos!=='x'?p.pos:''}</span></li>`).join("")+"</ol>";
+  };
+  return `<div class="card" style="animation-delay:${i*45}ms">
+    <div class="card-top">
+      <div class="match">${g.away_abbr}<span class="at">@</span>${g.home_abbr}</div>
+      <div class="gtime">${g.time||""}</div>
+    </div>
+    <div class="sp">
+      <div class="who"><div class="nm">${g.away_pitcher.name||"TBD"}</div>
+        <div class="meta">${g.away_abbr} · ${g.away_pitcher.throws||"?"}HP</div></div>
+      <div class="era">ERA <b>${g.away_pitcher.era??"—"}</b></div>
+    </div>
+    <div class="sp">
+      <div class="who"><div class="nm">${g.home_pitcher.name||"TBD"}</div>
+        <div class="meta">${g.home_abbr} · ${g.home_pitcher.throws||"?"}HP</div></div>
+      <div class="era">ERA <b>${g.home_pitcher.era??"—"}</b></div>
+    </div>
+    <div class="winbar"><i style="width:${(aw*100).toFixed(1)}%"></i></div>
+    <div class="wlabels"><span><b>${g.away_abbr}</b> ${fmtPct(ml.away_wpct)}</span><span>${fmtPct(ml.home_wpct)} <b>${g.home_abbr}</b></span></div>
+    <div class="kv">
+      <div>
+        <div class="k">${g.away_abbr} ML ${flag(ml.away_edge)}</div>
+        <div class="v">${fmtOdds(ml.away_fair)} <small>fair</small></div>
+        <div class="vsub">med ${fmtOdds(ml.away_book)} · best ${fmtOdds(ml.away_best)}${bk(ml.away_best_book)}</div>
+      </div>
+      <div>
+        <div class="k">${g.home_abbr} ML ${flag(ml.home_edge)}</div>
+        <div class="v">${fmtOdds(ml.home_fair)} <small>fair</small></div>
+        <div class="vsub">med ${fmtOdds(ml.home_book)} · best ${fmtOdds(ml.home_best)}${bk(ml.home_best_book)}</div>
+      </div>
+      <div class="full">
+        <div class="k">F5 Total <span class="lean ${leanCls}">${leanTxt}</span></div>
+        <div class="v">${t.predicted??"—"} <small>model · line ${t.line??"—"}${t.n_books?` · ${t.n_books} books`:""}</small></div>
+        <div class="vsub">O med ${fmtOdds(t.over_med)} best ${fmtOdds(t.over_best)}${bk(t.over_best_book)} &nbsp;·&nbsp; U med ${fmtOdds(t.under_med)} best ${fmtOdds(t.under_best)}${bk(t.under_best_book)}</div>
+      </div>
+      <div>
+        <div class="k">Off · runs/5</div>
+        <div class="v">${r.away_off??"—"}<small> / ${r.home_off??"—"}</small></div>
+      </div>
+      <div>
+        <div class="k">Park factor</div>
+        <div class="v">${r.park_factor??"—"}</div>
+      </div>
+    </div>
+    <button class="toggle">Lineups</button>
+    <div class="lu">
+      <div><h4>${g.away_abbr}</h4>${lu("away")}</div>
+      <div><h4>${g.home_abbr}</h4>${lu("home")}</div>
+    </div>
+  </div>`;
+}
+</script>
+</body>
+</html>
