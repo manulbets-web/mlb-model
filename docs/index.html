@@ -7,7 +7,7 @@
 <title>First 5 Innings Model</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --paper:#fbfbf9; --surface:#ffffff; --raise:#f6f6f3;
@@ -15,7 +15,7 @@
   --ink:#17191c; --ink2:#5c626a; --ink3:#9ba0a6;
   --accent:#127a4d; --accent-soft:#e6f3ec;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
-  --sans:'Schibsted Grotesk',system-ui,sans-serif;
+  --sans:'Bricolage Grotesque',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
@@ -122,12 +122,7 @@ footer{margin-top:54px;padding-top:22px;border-top:1px solid var(--line);font-fa
   </header>
 
   <div class="bar">
-    <h2>Top Edges <span id="edgeCount"></span></h2>
-    <div class="tabs" id="mktTabs">
-      <button data-m="ALL" class="active">All</button>
-      <button data-m="ML">Moneyline</button>
-      <button data-m="TOTAL">Totals</button>
-    </div>
+    <h2>Top Edges · Moneyline <span id="edgeCount"></span></h2>
   </div>
   <div class="board" id="board"></div>
 
@@ -181,10 +176,10 @@ function renderHeader(){
 
 function renderBoard(){
   const tabs=document.getElementById("mktTabs");
-  tabs.querySelectorAll("button").forEach(b=>{
+  if(tabs){tabs.querySelectorAll("button").forEach(b=>{
     b.onclick=()=>{MKT=b.dataset.m;tabs.querySelectorAll("button").forEach(x=>x.classList.remove("active"));b.classList.add("active");renderBoard();};
-  });
-  let bets=(Array.isArray(DATA.bets)?DATA.bets:[]).filter(b=>(MKT==="ALL"||b.market===MKT)&&b.tier!=="none");
+  });}
+  let bets=(Array.isArray(DATA.bets)?DATA.bets:[]).filter(b=>b.market==="ML"&&b.tier!=="none");
   const board=document.getElementById("board");
   const head=`<div class="row head"><span></span><span>Mkt</span><span>Side · Odds</span><span class="num">Edge</span><span class="num ev">EV</span><span class="matchcell">Game · Time</span></div>`;
   if(!bets.length){board.innerHTML=head+'<div class="empty">No qualifying edges right now.</div>';document.getElementById("edgeCount").textContent="(0)";return;}
@@ -268,6 +263,10 @@ function card(g,i){
       <div>
         <div class="k">Off · runs/5</div>
         <div class="v">${r.away_off??"—"}<small> / ${r.home_off??"—"}</small></div>
+      </div>
+      <div>
+        <div class="k">RA · F5 ERA</div>
+        <div class="v">${r.away_total_era??"—"}<small> / ${r.home_total_era??"—"}</small></div>
       </div>
       <div>
         <div class="k">Park factor</div>
